@@ -1,0 +1,2 @@
+# SkyTap
+There are many great sensors out there for measuring our environment but many of these only send data to a display for viewing without storing the data or making further use of it.  This project uses a raspberry pi to intercept 433mHz weather data, store it, and display it on a local webserver.  While these programs are set up for a specific sensor, the process can be used for innumerable sensor applications.
