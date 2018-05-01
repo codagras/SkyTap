@@ -1,5 +1,5 @@
 # Author: Coltin Grasmick
-# Date: 31/03/2018
+# Date: 30/04/2018
 # Purpose: Intercept 433 mHz weather station signal, decode, store, and display data
 # -----------------------------------------------------------------------------
 from datetime import datetime
@@ -115,6 +115,15 @@ def decodeSignal(MAX_DURATION):
             
             return signalTime,temp,relH,wspd
     return signalTime,-999,-999,-999
+
+def checkForSpikes(temp, relH, lastTemp, lastRelH, SR_TempDiff, SR_RelHDiff, dt):
+    if (lastTemp != -999) and (lastRelH != -999):
+        if (abs(temp - lastTemp) <= SR_TempDiff*dt) and (abs(relH - lastRelH) <= SR_RelHDiff*dt):
+            return(True)
+        else:
+            return(False)
+    else:
+        return(True)
                 
     
     
@@ -123,15 +132,18 @@ def decodeSignal(MAX_DURATION):
 if __name__ == '__main__':
 
     #Settings------------------
-    logInterval = 1          #Minutes between data logging (minimum of 1)
+    logInterval = 1             #Minutes between data logging (minimum of 1)
     webUpdateInterval = 1       #Minutes between current weather update on display (minimum of logger interval)
     graphDataInterval = 5       #Minutes between data points on graph
     displayPort = 8000          #Port for webDisplay (i.e. http://localhost:8000)
     MAX_DURATION = 8            #Seconds of signal to record
     RECEIVE_PIN = 23            #Rasberry Pi pin reciever is sending data to
+    SR_On_Off = 1               #Turn Spike Removal on(1) or off(0)
+    SR_TempDiff = 5.0           #Spike Removal (temperature); acceptable change in degrees per minute
+    SR_RelHDiff = 5.0           #Spike Removal (Relative Humidity); acceptable change in percent per minute
     #--------------------------
     
-    version = 2.0
+    version = 2.1
     startTime = datetime.now()
     
     print("**Begin SkyTap")
@@ -142,6 +154,8 @@ if __name__ == '__main__':
     wspd_ave = -999
     gust = -999
     dewPoint = -999
+    lastTemp = -999
+    lastRelH = -999
     wspd_10min = []
     wind_dt = 1
     
@@ -165,6 +179,12 @@ if __name__ == '__main__':
     #Start webserver
     startWebserver(displayPort)
 
+    #append data to the month log
+    with open("/home/pi/SkyTap/log.txt", 'a') as logfile:
+        logfile.write("SkyTap started at: " + datetime.strftime(startTime,"%d-%m-%Y %H:%M:%S\n"))
+        logfile.write("---------------------------------------\n")
+    logfile.close()
+
 
 #Normal running loop-----------------------------------------------------------
     while True:
@@ -173,8 +193,12 @@ if __name__ == '__main__':
         signalTime,temp,relH,wspd = decodeSignal(MAX_DURATION)                 #retrieve outdoor temp, relH, and Wspd
         inTempC,inPresMb,inRelH = readBME280All()                   #retrieve indoor temp, relH, and pressure from BME280
         
-        #If all variables are retrieved: determine derived values, log data, then rest till next sync
-        if (relH != -999) and (temp != -999) and (wspd != -999):
+        #If no spikes or missing data: determine derived values, log data, then rest till next sync
+        if (SR_On_Off == 1):
+            dt = round((signalTime-nextSync)/td(minutes=1)) + 1.
+            noSpikes = checkForSpikes(temp, relH, lastTemp, lastRelH, SR_TempDiff, SR_RelHDiff, dt)
+        else: noSpikes == True
+        if (wspd != -999) and noSpikes:
             
             #Ten minute average wind speed (saves 10 minutes of wind data)
             if (len(wspd_10min) >= 10/logInterval):
@@ -252,6 +276,8 @@ if __name__ == '__main__':
             windChill = -999
             dewpoint = -999
             lastSync = signalTime.replace(second=0,microsecond=0)
+            lastTemp = temp
+            lastRelH = relH
             nextSync = lastSync + td(minutes=logInterval)
             
             #rest until nextSync time

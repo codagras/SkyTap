@@ -23,10 +23,10 @@ var currentGraph;
 			success: function (resp) {
 				lastupdate = resp.now[1]
 				currentTemp = resp.now[2]
-				currentDew = resp.now[3]
+				currentDew = resp.now[4]
 				currentWind = resp.now[6]
 				currentGust = resp.now[7]
-				currentRelH = resp.now[4]
+				currentRelH = resp.now[3]
 				currentPressure = resp.now[11]
 				todaysWindRun = resp.now[12]
 				
