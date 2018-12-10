@@ -1,7 +1,7 @@
 var updateInterval = 60;			//update interval in seconds
 var graphUpdateInterval = 300;		//update interval in seconds
-var latitude = 41.31				//latitude for sunrise/sunset calculation
-var longitude = -105.59				//longitude for sunrise/sunset calculation
+var latitude = 38.35				//latitude for sunrise/sunset calculation
+var longitude = -107.38				//longitude for sunrise/sunset calculation
 var chart,config;
 var currentTemp;
 var currentDew;
@@ -26,6 +26,8 @@ var currentGraph;
 				currentDew = resp.now[4]
 				currentWind = resp.now[6]
 				currentGust = resp.now[7]
+				currentInTemp = resp.now[8]
+				currentInHum = resp.now[9]
 				currentRelH = resp.now[3]
 				currentPressure = resp.now[11]
 				todaysWindRun = resp.now[12]
@@ -42,6 +44,8 @@ var currentGraph;
 				$('span#windRun').text(todaysWindRun);
 				$('span#sunriseStr').text(sunriseStr);
 				$('span#sunsetStr').text(sunsetStr);
+				$('span#inTemp').text(currentInTemp);
+				$('span#inHum').text(currentInHum);
 			}
 		});
 		
@@ -132,6 +136,12 @@ var currentGraph;
 				 break;
 			case 'humidity':
 				 doHum();
+				 break;
+			case 'dailyintemp':
+				 doDailyInTemp();
+				 break;
+			case 'dailywindrun':
+				 doDailyWindRun();
 				 break;
 			}
 	}
@@ -572,7 +582,7 @@ var currentGraph;
 				type: 'line',
 				alignTicks: false
 			},
-			title: {text: 'Daily Temperature'},
+			title: {text: 'Daily Outdoor Temperatures'},
 			credits: {enabled: false},
 			xAxis: {
 				type: 'datetime',
@@ -675,6 +685,221 @@ var currentGraph;
 				chart.series[0].setData(resp.ave);
 				chart.series[1].setData(resp.min);
 				chart.series[2].setData(resp.max);
+			}
+		});
+	};
+	
+	var doDailyInTemp = function () {
+		currentGraph = "doDailyInTemp";
+		var freezing = config.temp.units === 'C' ? 0 : 32;
+		var options = {
+			chart: {
+				renderTo: 'chartcontainer',
+				type: 'line',
+				alignTicks: false
+			},
+			title: {text: 'Daily Indoor Temperatures'},
+			credits: {enabled: false},
+			xAxis: {
+				type: 'datetime',
+				ordinal: false,
+				dateTimeLabelFormats: {
+					day: '%e %b',
+					week: '%e %b %y',
+					month: '%b %y',
+					year: '%Y'
+				}
+			},
+			yAxis: [{
+					// left
+					title: {text: 'Daily Temperature (°' + config.temp.units + ')'},
+					opposite: false,
+					labels: {
+						align: 'right',
+						x: -5,
+						formatter: function () {
+							return '<span style="fill: ' + (this.value <= 0 ? 'blue' : 'red') + ';">' + this.value + '</span>';
+						}
+					},
+					plotLines: [{
+							// freezing line
+							value: freezing,
+							color: 'rgb(0, 0, 180)',
+							width: 1,
+							zIndex: 2
+						}]
+				}, {
+					// right
+					linkedTo: 0,
+					gridLineWidth: 0,
+					opposite: true,
+					title: {text: null},
+					labels: {
+						align: 'left',
+						x: 5,
+						formatter: function () {
+							return '<span style="fill: ' + (this.value <= 0 ? 'blue' : 'red') + ';">' + this.value + '</span>';
+						}
+					}
+				}],
+			legend: {enabled: true},
+			plotOptions: {
+				series: {
+					dataGrouping:{
+						enabled:false
+					},
+					states: {
+						hover: {
+							halo: {
+								size: 5,
+								opacity: 0.25
+							}
+
+						}
+					},
+					cursor: 'pointer',
+					marker: {
+						enabled: false,
+						states: {
+							hover: {
+								enabled: true,
+								radius: 0.1
+							}
+						}
+					}
+				},
+				line: {lineWidth: 2}
+			},
+			tooltip: {
+				shared: true,
+				crosshairs: true,
+				valueSuffix: '°' + config.temp.units,
+				valueDecimals: config.temp.decimals,
+				xDateFormat: "%A, %b %e"
+			},
+			series: [{
+					name: 'Avg Temp',
+					color: 'green'
+				}, {
+					name: 'Min Temp',
+					color: 'blue'
+				}, {
+					name: 'Max Temp',
+					color: 'red'
+				}]
+		};
+		
+		chart = new Highcharts.chart(options);
+		chart.showLoading();
+		
+		$.ajax({
+			url: 'dailyInTempData.json',
+			dataType: 'json',
+			cache: false,
+			success: function (resp) {
+				chart.hideLoading();
+				chart.series[0].setData(resp.ave);
+				chart.series[1].setData(resp.min);
+				chart.series[2].setData(resp.max);
+			}
+		});
+	};
+	
+	var doDailyWindRun = function() {
+		currentGraph = "doDailyWindRun";
+		var options = {
+			chart: {
+				renderTo: 'chartcontainer',
+				type: 'line',
+				alignTicks: false
+			},
+			title: {text: 'Daily Windrun'},
+			credits: {enabled: false},
+			xAxis: {
+				type: 'datetime',
+				ordinal: false,
+				dateTimeLabelFormats: {
+					day: '%e %b',
+					week: '%e %b %y',
+					month: '%b %y',
+					year: '%Y'
+				}
+			},
+			yAxis: [{
+					// left
+					title: {text: 'Windrun (' + config.windrun.units + ')'},
+					opposite: false,
+					labels: {
+						align: 'right',
+						x: -5,
+						formatter: function () {
+							return '<span style="fill: ' + (this.value <= 0 ? 'blue' : 'red') + ';">' + this.value + '</span>';
+						}
+					}                
+				}, {
+					// right
+					linkedTo: 0,
+					gridLineWidth: 0,
+					opposite: true,
+					title: {text: null},
+					labels: {
+						align: 'left',
+						x: 5,
+						formatter: function () {
+							return '<span style="fill: ' + (this.value <= 0 ? 'blue' : 'red') + ';">' + this.value + '</span>';
+						}
+					}
+				}],
+			legend: {enabled: true},
+			plotOptions: {
+				series: {
+					dataGrouping:{
+						enabled:false
+					},
+					states: {
+						hover: {
+							halo: {
+								size: 5,
+								opacity: 0.25
+							}
+
+						}
+					},
+					cursor: 'pointer',
+					marker: {
+						enabled: false,
+						states: {
+							hover: {
+								enabled: true,
+								radius: 0.1
+							}
+						}
+					}
+				},
+				line: {lineWidth: 2}
+			},
+			tooltip: {
+				shared: true,
+				crosshairs: true,
+				valueSuffix: config.windrun.units,
+				valueDecimals: config.windrun.decimals,
+				xDateFormat: "%A, %b %e, %H:%M"
+			},
+			series: [{
+					name: 'Windrun'                
+				}],
+		};
+		
+		chart = new Highcharts.Chart(options);
+		chart.showLoading();
+		
+		$.ajax({
+			url: 'dailyWindRunData.json',
+			dataType: 'json',
+			cache: false,
+			success: function (resp) {
+				chart.hideLoading();
+				chart.series[0].setData(resp.windRun);
 			}
 		});
 	};

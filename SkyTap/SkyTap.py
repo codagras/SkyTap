@@ -1,7 +1,3 @@
-# Author: Coltin Grasmick
-# Date: 30/04/2018
-# Purpose: Intercept 433 mHz weather station signal, decode, store, and display data
-# -----------------------------------------------------------------------------
 from datetime import datetime
 from datetime import timedelta as td
 from met_functions2 import *
@@ -28,9 +24,8 @@ def BIN2DEC(bin_value):
             decimal += math.pow(2,N-i-1)*bin_value[i]
     return(decimal)
     
-def decodeSignal(MAX_DURATION):
+def decodeSignal(MAX_DURATION,stationID):
 
-    global stationFound
     RECEIVED_SIGNAL = [[], []]                               #[[time of reading], [signal reading]]
     
     GPIO.setmode(GPIO.BCM)
@@ -77,7 +72,6 @@ def decodeSignal(MAX_DURATION):
             low_check = dy[p+1:p+65]            #check for any gaps in the signal
             if max(low_check) < 35:
                 solns.append(p)
-
     #Convert confirmed signals to Binary
     for i in range(len(solns)-1,-1,-1):         #Runs through signals in reverse (later ones are better)
         binary = []
@@ -86,11 +80,8 @@ def decodeSignal(MAX_DURATION):
                 binary.append(1)
             else:
                 binary.append(0)
-        check = binary[0:24]                    #The first three bytes identify the sensor, may change on any resets
-        if check == [1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0]:
-            if (stationFound == 0):
-                print('**Connected to Station')
-                stationFound = 1
+        check = binary[0:24]                    #The first three bytes identify the sensor
+        if check == stationID:
                 
             #This section identifies the bits for temp, hum and wspd
             bin_relH = binary[25:32]
@@ -123,7 +114,74 @@ def checkForSpikes(temp, relH, lastTemp, lastRelH, SR_TempDiff, SR_RelHDiff, dt)
         else:
             return(False)
     else:
-        return(True)
+        if temp != -999:
+            return(True)
+        else:
+            return(False)
+        
+def FindStation(MAX_DURATION):
+    
+    IDs = []
+    RECEIVED_SIGNAL = [[], []]                               #[[time of reading], [signal reading]]
+    
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(RECEIVE_PIN, GPIO.IN)
+    cumulative_time = 0
+    signalTime = datetime.now()
+    while cumulative_time < MAX_DURATION*3:
+        time_delta = datetime.now() - signalTime
+        RECEIVED_SIGNAL[0].append(time_delta)
+        RECEIVED_SIGNAL[1].append(GPIO.input(RECEIVE_PIN))
+        cumulative_time = time_delta.seconds
+    GPIO.cleanup()
+
+    dx = []                 #length of signal high
+    dy = []                 #length of signal low
+    ind_rec = []
+    high_count = 0
+    low_count = 0
+
+    #Convert raw singal to length of time signal is high and low
+    for i in range(len(RECEIVED_SIGNAL[0])):
+        if RECEIVED_SIGNAL[1][i] ==1:
+            high_count += 1
+            if low_count > 0:                                #recievers with poor signal to noise ratio need this raised
+                dy.append(low_count)
+                low_count = 0
+        else:
+            low_count +=1
+            if high_count > 0:
+                dx.append(high_count)
+                high_count = 0
+                ind_rec.append(i)
+            
+
+    #Search for sync signal (usually a long high)
+    dx = np.array(dx)
+    possibles = np.where(dx > 90)[0]                        #May need adjusted based on sensor type
+    
+    #Confirm sync (my sensors sync signal has the initial long high >90 followed by three more between 15 and 30)
+    solns = []
+    for p in possibles:
+        check = dx[p+1:p+4]
+        if np.all(check >= 15) and np.all(check <= 30) and p <= len(dx) - 68:
+            low_check = dy[p+1:p+65]            #check for any gaps in the signal
+            if max(low_check) < 35:
+                solns.append(p)
+    #Convert confirmed signals to Binary
+    for i in range(len(solns)-1,-1,-1):         #Runs through signals in reverse (later ones are better)
+        binary = []
+        for j in range(solns[i]+4, solns[i]+68):
+            if dx[j] > 10:                      #Any high longer than 10 is considered a 1, otherwisea 0
+                binary.append(1)
+            else:
+                binary.append(0)
+        IDs.append(binary[0:24])
+        
+    if len(IDs) >= 2 and all(x==IDs[0] for x in IDs):
+        return IDs[0]
+    else:
+        return 0
                 
     
     
@@ -143,7 +201,7 @@ if __name__ == '__main__':
     SR_RelHDiff = 5.0           #Spike Removal (Relative Humidity); acceptable change in percent per minute
     #--------------------------
     
-    version = 2.1
+    version = 2.4
     startTime = datetime.now()
     
     print("**Begin SkyTap")
@@ -159,8 +217,6 @@ if __name__ == '__main__':
     wspd_10min = []
     wind_dt = 1
     
-    global stationFound
-    stationFound = 0
     
     #initialize variables via today.ini
     lastSync,windRun = restoreDayFile()
@@ -184,13 +240,21 @@ if __name__ == '__main__':
         logfile.write("SkyTap started at: " + datetime.strftime(startTime,"%d-%m-%Y %H:%M:%S\n"))
         logfile.write("---------------------------------------\n")
     logfile.close()
+    
+    #Search for station and determine stationID
+    print("**Searching for Station", end="", flush=True)
+    stationID = 0
+    while stationID == 0:
+        print(" ...", end="", flush=True)
+        stationID = FindStation(MAX_DURATION)
+    print("\n**Connected to Station")
 
 
 #Normal running loop-----------------------------------------------------------
     while True:
         saveFile = datetime.now().strftime("/home/pi/SkyTap/data/%b%ylog.csv")
         
-        signalTime,temp,relH,wspd = decodeSignal(MAX_DURATION)                 #retrieve outdoor temp, relH, and Wspd
+        signalTime,temp,relH,wspd = decodeSignal(MAX_DURATION,stationID)                 #retrieve outdoor temp, relH, and Wspd
         inTempC,inPresMb,inRelH = readBME280All()                   #retrieve indoor temp, relH, and pressure from BME280
         
         #If no spikes or missing data: determine derived values, log data, then rest till next sync
@@ -250,21 +314,22 @@ if __name__ == '__main__':
                         updateToday(currentWx)
                         updateMonth(currentWx)
                     else:
-                        newDay(currentWx)
                         updateYear(currentWx)
                         updateAllTime()
+                        newDay(currentWx)
                 else:
-                    newDay(currentWx)
-                    newMonth(currentWx)
                     updateYear(currentWx)
                     updateAllTime()
                     updateMonthlyAllTime()
+                    newMonth(currentWx)
+                    newDay(currentWx)
             else:
-                newDay(currentWx)
-                newMonth(currentWx)
-                newYear(currentWx)
                 updateYear(currentWx)
                 updateAllTime()
+                updateMonthlyAllTime()
+                newYear(currentWx)
+                newMonth(currentWx)
+                newDay(currentWx)
                 
             #Save data in JSON files to be read by web display
             if signalTime.minute % graphDataInterval == 0:

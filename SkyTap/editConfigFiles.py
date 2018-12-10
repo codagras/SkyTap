@@ -180,6 +180,7 @@ def updateMonth(currentWx):
 #update year.ini at the beginning of each day
 def updateYear(currentWx):
 
+    time = currentWx[1]
     for i in range(2,len(currentWx)):
         currentWx[i] = float(currentWx[i])
     
@@ -227,6 +228,8 @@ def updateYear(currentWx):
 
     config = configparser.ConfigParser()
     config.read(year_file)
+
+    config['General']['date'] = str(date) + ' ' + time
         
     if Speed > config.getfloat('Wind', 'Speed'):
         config['Wind']['Speed'] = str(Speed)
@@ -250,11 +253,11 @@ def updateYear(currentWx):
     if Temp_inHigh > config.getfloat('Temp', 'inHigh'):
         config['Temp']['inHigh'] = str(Temp_inHigh)
         config['Temp']['inHTime'] = Temp_inHTime
-    if Temp_Low > config.getfloat('Temp', 'LowMax'):
-        config['Temp']['LowMax'] = str(Temp_Low)
+    if Temp_High < config.getfloat('Temp', 'LowMax'):
+        config['Temp']['LowMax'] = str(Temp_High)
         config['Temp']['LMTime'] = date
-    if Temp_High < config.getfloat('Temp', 'HighMin'):
-        config['Temp']['HighMin'] = str(Temp_High)
+    if Temp_Low > config.getfloat('Temp', 'HighMin'):
+        config['Temp']['HighMin'] = str(Temp_Low)
         config['Temp']['HMTime'] = date
     if Temp_range < config.getfloat('Temp', 'lowrange'):
         config['Temp']['lowrange'] = str(Temp_range)

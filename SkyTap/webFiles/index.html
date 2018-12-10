@@ -14,7 +14,7 @@
 	<div id="page">
 		<table id="display">
 			<tr class="Row1">
-				<td class="Col1 panel">
+				<td class="row1 Col1 panel">
 					<div class="header">
 						<h3>Time and Date</h3>
 					</div>
@@ -32,9 +32,9 @@
 						<p class="recordText">Last Update: <span id="lastUpdate">-:--</span></p>
 					</div>
 				</td>
-				<td class="Col2 panel">
+				<td class="row1 Col2 panel">
 					<div class="header">
-						<h3>Current Outdoor Conditions</h3>
+						<h3>Current Conditions</h3>
 					</div>
 					<div class="content topLeft">
 					<p id="tempText"><span id="outTemp">--</span>&#8457;</p>
@@ -48,6 +48,12 @@
 					</div>
 					<div class="content bottom margin5">
 					<p>Absolute Pressure: <span id="pressure">---.-</span> mb</p>
+					</div>
+					<div class="content bottomLeft">
+					<p>Indoor Temperature: <span id="inTemp">--.-</span>&#8457;</p>
+					</div><!--
+					--><div class="content bottomRight">
+					<p>Humidity: <span id="inHum">--.-</span>%</p>
 					</div>
 				</td>
 			</tr>
@@ -96,6 +102,14 @@
 							</td>
 							<td class="td_left">
 								<input name="btnHum" class="button" tabindex="5" type="button" value="Humidity" onclick="changeGraph(&quot;humidity&quot;);">
+
+							</td>
+							<td class="td_left">
+								<input name="btnDailyInTemp" class="button" tabindex="2" type="button" value="Daily In-Temp" onclick="changeGraph(&quot;dailyintemp&quot;);">
+
+							</td>
+							<td class="td_left">
+								<input name="btnDailyWindrun" class="button" tabindex="2" type="button" value="Daily Windrun" onclick="changeGraph(&quot;dailywindrun&quot;);">
 
 							</td>
 						</tr>

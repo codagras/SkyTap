@@ -50,9 +50,23 @@ def toGraph(current):
             dailyTempData = {}
             dailyTempData["max"] = []
             dailyTempData["min"] = []
-            dailyTempData["ava"] = []
+            dailyTempData["ave"] = []
             json.dump(dailyTempData, dailyTempFile)
         dailyTempFile.close()
+        
+        with open('webFiles/dailyInTempData.json', 'w') as dailyInTempFile:
+            dailyInTempData = {}
+            dailyInTempData["max"] = []
+            dailyInTempData["min"] = []
+            dailyInTempData["ave"] = []
+            json.dump(dailyInTempData, dailyInTempFile)
+        dailyInTempFile.close()
+        
+        with open('webFiles/dailyWindRunData.json', 'w') as dailyWindRunFile:
+            dailyWindRunData = {}
+            dailyWindRunData["windRun"] = []
+            json.dump(dailyWindRunData, dailyWindRunFile)
+        dailyWindRunFile.close()
 
     try:
         lastSync_long = tempData["temp"][len(tempData["temp"])-1][0]
@@ -77,6 +91,32 @@ def toGraph(current):
             json.dump(dailyTempData, dailyTempFile)
             dailyTempFile.truncate()
         dailyTempFile.close()
+        
+        with open('webFiles/dailyInTempData.json', 'r+') as dailyInTempFile:
+            dailyInTempData = json.load(dailyInTempFile)
+            while len(dailyInTempData["max"]) > 30:
+                del dailyInTempData["max"][0]
+                del dailyInTempData["min"][0]
+                del dailyInTempData["ave"][0]
+            tempList = [i[1] for i in tempData["inTemp"]]
+            dailyInTempFile.seek(0)
+            dailyInTempData["max"].append([lastSync_long,max(tempList)])
+            dailyInTempData["min"].append([lastSync_long,min(tempList)])
+            dailyInTempData["ave"].append([lastSync_long,sum(tempList)/float(len(tempList))])
+            json.dump(dailyInTempData, dailyInTempFile)
+            dailyInTempFile.truncate()
+        dailyInTempFile.close()
+        
+        with open('webFiles/dailyWindRunData.json', 'r+') as dailyWindRunFile:
+            dailyWindRunData = json.load(dailyWindRunFile)
+            while len(dailyWindRunData["windRun"]) > 30:
+                del dailyWindRunData["windRun"][0]
+            windList = [i[1] for i in windData["ave_wind"]]
+            dailyWindRunFile.seek(0)
+            dailyWindRunData["windRun"].append([lastSync_long,sum(windList)/float(len(windList))*24.0])
+            json.dump(dailyWindRunData, dailyWindRunFile)
+            dailyWindRunFile.truncate()
+        dailyWindRunFile.close()
 
     try:
         while dayStart >= tempData["temp"][0][0]:
