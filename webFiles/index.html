@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+  <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="Display.css" rel="stylesheet">
+	<script src="script/jquery-3.1.0.min.js"></script>
+	<script type='text/javascript' src='script/app.js'></script>
+	<script src="Highcharts/code/highcharts.js"></script>
+	<script type='text/javascript' src='script/graphScript.js'></script>
+	<script type='text/javascript' src='script/suncalc.js'></script>
+	<script src="Highcharts/code/themes/dark-blue.js"></script>
+  </head>
+  <body>
+	<div id="page">
+		<table id="display">
+			<tr class="Row1">
+				<td class="row1 Col1 panel">
+					<div class="header">
+						<h3>Time and Date</h3>
+					</div>
+					<div class="content margin5">
+						<p id="time"><span id="time"></span></p>
+						<p><span id="date"></span></p>
+						<div id="sunrise">
+							<img src="images/sunriseWhite.png"/>
+							<p class="inline"><span id="sunriseStr">-:--</span></p>
+						</div>
+						<div id="sunset">
+							<img src="images/sunsetWhite.png"/>
+							<p class="inline"><span id="sunsetStr">-:--</span></p>
+						</div>
+						<p class="recordText">Last Update: <span id="lastUpdate">-:--</span></p>
+					</div>
+				</td>
+				<td class="row1 Col2 panel">
+					<div class="header">
+						<h3>Current Conditions</h3>
+					</div>
+					<div class="content topLeft">
+					<p id="tempText"><span id="outTemp">--</span>&#8457;</p>
+					<p>Humidity: <span id="outRelH">--</span>%</p>
+					<p>Dew point: <span id="outDew">--</span>&#8457;</p>
+					</div><!--
+					--><div class="content topRight">
+					<p id="windText"><span id="wind">-</span> mph</p>
+					<p>Wind gust: <span id="gust">--</span> mph</p>
+					<p>Wind run: <span id="windRun">---</span> miles</p>
+					</div>
+					<div class="content bottom margin5">
+					<p>Absolute Pressure: <span id="pressure">---.-</span> mb</p>
+					</div>
+					<div class="content bottomLeft">
+					<p>Indoor Temperature: <span id="inTemp">--.-</span>&#8457;</p>
+					</div><!--
+					--><div class="content bottomRight">
+					<p>Humidity: <span id="inHum">--.-</span>%</p>
+					</div>
+				</td>
+			</tr>
+			<tr class="Row2">
+				<td class="Col1 panel">
+					<div class="header">
+						<h3>Records</h3>
+					</div>
+					<div class="content margin5">
+					<p style="margin:auto">day/month/year</p>
+					</div>
+					<div class="contentLeft">
+					<p class="recordText">High Temp: <span id="dayHighTemp">--.-</span> / <span id="monthHighTemp">--.-</span> / <span id="yearHighTemp">--.-</span></p>
+					<p class="recordText">Low Temp: <span id="dayLowTemp">--.-</span> / <span id="monthLowTemp">--.-</span> / <span id="yearLowTemp">--.-</span></p>
+					<p class="recordText">High Wind: <span id="dayHighWind">--</span> / <span id="monthHighWind">--</span> / <span id="yearHighWind">--</span></p>
+					<p class="recordText">High Gust: <span id="dayHighGust">--</span> / <span id="monthHighGust">--</span> / <span id="yearHighGust">--</span></p>
+					<p class="recordText">Windrun: <span id="windRun">---</span> / <span id="monthWindrun">---</span> / <span id="yearWindrun">---</span></p>
+					<p class="recordText">High Pres: <span id="dayHighPressure">---</span> / <span id="monthHighPressure">---</span> / <span id="yearHighPressure">---</span></p>
+					<p class="recordText">Low Pres: <span id="dayLowPressure">---</span> / <span id="monthLowPressure">---</span> / <span id="yearLowPressure">---</span></p>
+					<p class="recordText">High Range: <span id="dayTempRange">--</span> / <span id="monthHighRange">--</span> / <span id="yearHighRange">--</span></p>
+					<p class="recordText">Lowest Max: <span id="monthLowMax">--</span> / <span id="yearLowMax">--</span></p>
+					</div>
+				</td>
+				<td class="Col2 panel">
+					<div class="header">
+						<h3>Trends</h3>
+					</div>
+					<div id="chartcontainer" style="width:90%; height:300px;"></div>
+					<table id="buttons">
+						<tr>
+							<td class="td_left">
+								<input name="btnTemp" class="button" tabindex="1" type="button" value="Temperature" onclick="changeGraph(&quot;temp&quot;);">
+
+							</td>
+							<td class="td_left">
+								<input name="btnDailyTemp" class="button" tabindex="2" type="button" value="Daily Temp" onclick="changeGraph(&quot;dailytemp&quot;);">
+
+							</td>
+							<td class="td_left">
+								<input name="btnPress" class="button" tabindex="3" type="button" value="Pressure" onclick="changeGraph(&quot;press&quot;);">
+
+							</td>
+							<td class="td_left">
+								<input name="btnWind" class="button" tabindex="4" type="button" value="Wind Speed" onclick="changeGraph(&quot;wind&quot;);">
+
+							</td>
+							<td class="td_left">
+								<input name="btnHum" class="button" tabindex="5" type="button" value="Humidity" onclick="changeGraph(&quot;humidity&quot;);">
+
+							</td>
+							<td class="td_left">
+								<input name="btnDailyInTemp" class="button" tabindex="2" type="button" value="Daily In-Temp" onclick="changeGraph(&quot;dailyintemp&quot;);">
+
+							</td>
+							<td class="td_left">
+								<input name="btnDailyWindrun" class="button" tabindex="2" type="button" value="Daily Windrun" onclick="changeGraph(&quot;dailywindrun&quot;);">
+
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+    </div>
+  </body>
+</html>
